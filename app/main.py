@@ -11,15 +11,12 @@ from app.api.routers.v1 import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
-    app.state.http_client = httpx.AsyncClient(
+    async with httpx.AsyncClient(
         base_url="https://api.groq.com",
-        timeout=30.0,
-    )
-
-    yield
-
-    await app.state.http_client.aclose()
+        timeout=60.0,
+    ) as client:
+        app.state.http_client = client
+        yield
 
 
 app = FastAPI(

@@ -1,7 +1,10 @@
+import json
 import httpx
 from fastapi import Request
 
 from app.core.config import settings
+
+
 
 
 class AIService:
@@ -17,26 +20,27 @@ class AIService:
         self,
         exercise: str,
         code: str,
-    ) -> str:
+    ) -> dict:
 
-        prompt = """
+        prompt = f"""
 You are a programming exercise evaluator.
 
 Exercise:
-{0}
+{exercise}
 
 Student's code:
-{1}
+{code}
 
 Evaluate the student's code.
 
 Return ONLY valid JSON.
-    Do not use Markdown.
-    Do not add ```json.
-    Do not add any explanation outside the JSON.
+Do not use Markdown.
+Do not add ```json.
+Do not add any explanation outside the JSON.
 
-Answer exacly in this format:
-{
+Return exactly this structure:
+
+{{
   "exerciseId": 1,
   "score": 100,
   "correctness": 10,
@@ -45,24 +49,26 @@ Answer exacly in this format:
   "readability": 10,
   "maintainability": 10,
   "feedback": "string",
-  "hint": [
-    {
+  "hints": [
+    {{
       "text": "string"
-    }
+    }}
   ]
-the pydantic schema is:
-exerciseIdinteger> 0
-scoreinteger[0, 100]
-correctnessinteger[0, 10]
-functionalityinteger[0, 10]
-cleanCodeinteger[0, 10]
-readabilityinteger[0, 10]
-maintainabilityinteger[0, 10]
-feedbackstring[1, 400] characters
-hint allarray<object>[1, 5] items
-Items allobject
-textstring[1, 200] characters
-""".format(exercise, code)
+}}
+
+Rules:
+- exerciseId: integer > 0
+- score: integer from 0 to 100
+- correctness: integer from 0 to 10
+- functionality: integer from 0 to 10
+- cleanCode: integer from 0 to 10
+- readability: integer from 0 to 10
+- maintainability: integer from 0 to 10
+- feedback: 1 to 400 characters
+- hints: 1 to 5 items
+- each hint.text: 1 to 200 characters
+- answers should be in persian
+"""
 
         response = await self.client.post(
             "/openai/v1/chat/completions",
@@ -78,7 +84,6 @@ textstring[1, 200] characters
                     }
                 ],
                 "temperature": 0,
-                
             },
         )
 
@@ -87,11 +92,16 @@ textstring[1, 200] characters
         data = response.json()
 
         try:
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            return json.loads(content)
 
-        except (KeyError, IndexError, TypeError):
+        except (
+            KeyError,
+            IndexError,
+            TypeError,
+            json.JSONDecodeError,
+        ):
             raise ValueError("Invalid AI response")
-
 
 
 def get_ai_service(request: Request) -> AIService:

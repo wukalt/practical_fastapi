@@ -28,5 +28,5 @@ class EvaluationResponse(BaseEvaluation):
 
     feedback: str = Field(min_length=1, max_length=400)
     # hints: list[HintModel] = Field(min_length=1, max_length=5)
-    hint : conlist(item_type=HintModel, min_length=1, max_length=5)
+    hints : conlist(item_type=HintModel, min_length=1, max_length=5)
 

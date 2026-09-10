@@ -31,7 +31,7 @@ NotFoundHTTPException= HTTPException(
 )
 async def get_all_submissions(
     session: SessionDep
-) -> list[SubmissionResponse]:
+):
     return session.exec(select(Submission)).all()
 
 
@@ -39,7 +39,6 @@ async def get_all_submissions(
 @router.post(
     "/",
     response_model=EvaluationResponse
-
 )
 async def send_submission(
     submission: Annotated[SubmissionRequest, Body()],
@@ -49,7 +48,6 @@ async def send_submission(
     exercise_db= session.exec(
         select(Exercise).where(Exercise.id == submission.exercise_id)
     ).first()
-
 
     if not exercise_db:
         raise HTTPException(
@@ -80,8 +78,7 @@ async def send_submission(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="پاسخ نامعتبر از سرویس ارزیابی دریافت شد.",
         )
-
-    return EvaluationResponse.model_validate(result).model_dump_json()
+    return result
 
 
 @router.patch(
@@ -92,7 +89,7 @@ async def update_submission(
     id: Annotated[int, Path()],
     submission: Annotated[SubmissionUpdate, Body()],
     session: SessionDep
-) -> SubmissionResponse:
+):
     submission_db = session.exec(select(Submission).where(Submission.id == id)).first()
     if not submission_db:
         raise NotFoundHTTPException
